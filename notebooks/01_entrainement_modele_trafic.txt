@@ -1,0 +1,396 @@
+###  Metro Traffic Volume Prediction Pipeline
+#### 1. Imports and Configuration
+# Core Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import joblib # For saving/loading models
+import time
+
+# Scikit-learn Preprocessing & Pipeline
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.base import BaseEstimator, TransformerMixin # For custom transformers
+
+# Scikit-learn Models
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
+
+
+# Scikit-learn Metrics
+from sklearn.metrics import mean_squared_error, r2_score
+
+# Other Encoders
+from category_encoders import TargetEncoder # For Target Encoding
+
+# Configure display options (optional)
+pd.set_option('display.max_columns', 100)
+pd.set_option('display.max_colwidth', 50) # Adjusted for better display
+np.random.seed(42) # For reproducibility
+plt.rcParams['figure.figsize'] = (12, 7) # Default figure size
+sns.set_style("whitegrid")
+
+print("✅ All necessary libraries imported.")
+#### 2. Data Loading
+try:
+    df = pd.read_csv('Metro_Interstate_Traffic_Volume.csv')
+    print("✅ Dataset loaded successfully")
+except FileNotFoundError:
+    print("❌ Error: File not found. Check file path.")
+#### 3. Data Preprocessing
+# Convert datetime and extract features
+df['date_time'] = pd.to_datetime(df['date_time'], format="%d-%m-%Y %H:%M")
+df['hour'] = df['date_time'].dt.hour
+df['day_of_week'] = df['date_time'].dt.dayofweek
+df['month'] = df['date_time'].dt.month
+df['year'] = df['date_time'].dt.year
+
+# Temperature conversion (Kelvin to Celsius)
+df['temp'] = df['temp'] - 273.15
+
+# Cleanup unnecessary columns
+df = df.drop(columns=['date_time', 'weather_description'])
+#### 4. Feature Engineering
+# Temporal features
+df['is_weekend'] = df['day_of_week'].apply(lambda x: 1 if x >= 5 else 0)
+
+def get_peak_hour(hour):
+    return (
+        'morning_peak' if 7 <= hour < 10 else
+        'evening_peak' if 16 <= hour < 19 else
+        'off_peak'
+    )
+
+df['peak_hour'] = df['hour'].apply(get_peak_hour)
+
+# Seasonal features
+df['season'] = df['month'].apply(lambda m: 'winter' if m in [12,1,2] else 
+                                 'spring' if m in [3,4,5] else
+                                 'summer' if m in [6,7,8] else 'autumn')
+
+# Weather features
+df['precipitation'] = df['rain_1h'] + df['snow_1h']
+df['is_precipitating'] = (df['precipitation'] > 0).astype(int)
+df = df.drop(columns=['precipitation'])
+
+# Temperature categories
+df['temp_category'] = pd.cut(df['temp'],
+                            bins=[-np.inf, 0, 15, 25, np.inf],
+                            labels=['freezing', 'cold', 'mild', 'hot'])
+
+#### 5. Custom Encoders
+class FrequencyEncoder(BaseEstimator, TransformerMixin):
+    """
+    Encodes categorical features using their frequency (percentage)
+    learned from the training data. Handles potential Categorical dtypes.
+    """
+    def __init__(self, cols):
+        # cols: List of column names to be frequency encoded
+        if not isinstance(cols, list):
+            self.cols = [cols]
+        else:
+            self.cols = cols
+        self.freq_map = {} # Dictionary to store frequency mappings
+
+    def fit(self, X, y=None):
+        """
+        Learn the frequency of each category for the specified columns
+        from the training data X.
+        """
+        # Ensure X is a DataFrame
+        X_ = X.copy()
+        if not isinstance(X_, pd.DataFrame):
+             X_ = pd.DataFrame(X_)
+
+        for col in self.cols:
+            if col not in X_.columns:
+                raise ValueError(f"Column '{col}' not found in DataFrame")
+            # Calculate normalized frequencies (percentages)
+            # Convert to string first to handle mixed types or categoricals
+            frequencies = X_[col].astype(str).value_counts(normalize=True)
+            self.freq_map[col] = frequencies
+            # Storing frequencies learned during fit.
+            # Using normalize=True gives percentage, robust to dataset size.
+            # Using astype(str) ensures consistent category handling.
+        return self
+
+    def transform(self, X):
+        """
+        Transform the categories in X to their learned frequencies.
+        Handles categories not seen during fit by assigning frequency 0.
+        """
+        # Ensure X is a DataFrame for reliable column access
+        X_copy = X.copy()
+        if not isinstance(X_copy, pd.DataFrame):
+             X_copy = pd.DataFrame(X_copy)
+
+
+        for col in self.cols:
+            if col not in X_copy.columns:
+                raise ValueError(f"Column '{col}' not found in DataFrame")
+
+            # 1. Map categories to their learned frequencies using .astype(str)
+            #    for consistent lookup, matching the fit step.
+            mapped_series = (
+                X_copy[col].astype(str).map(self.freq_map.get(col, {}))
+            )
+            # .map looks up each value in the learned freq_map.
+            # .get(col, {}) prevents KeyError if col wasn't in fit (though unlikely here).
+            # Using .astype(str) is crucial for consistent mapping.
+
+            # 2. 
+            # Convert the result (frequencies or NaN) explicitly to float.
+            # This breaks the link to any original 'Categorical' dtype and
+            # allows filling NaN with a numeric value (0).
+            numeric_series = mapped_series.astype(float)
+            # This astype(float) is key to prevent the
+            # 'Cannot setitem on a Categorical with a new category' error,
+            # by ensuring we work with a numeric series before fillna.
+
+            # 3. Fill NaN values (for categories not seen during fit) with 0.
+            # Create the new frequency column name.
+            new_col_name = f'{col}_freq'
+            X_copy[new_col_name] = numeric_series.fillna(0)
+            # Filling NaNs with 0 assumes unseen categories
+            # have zero frequency in the training context.
+
+        # 4. Drop the original categorical columns after creating freq columns.
+        # Ensure only columns present in X_copy are dropped.
+        cols_to_drop = [c for c in self.cols if c in X_copy.columns]
+        X_copy = X_copy.drop(columns=cols_to_drop)
+        # Returning a DataFrame with original columns
+        # replaced by their frequency-encoded counterparts.
+
+        return X_copy
+#### 6. Pipeline Construction
+# Define feature types
+numeric_features = ['temp', 'rain_1h', 'snow_1h', 'clouds_all']
+categorical_ohe = ['holiday', 'weather_main']
+categorical_target = ['peak_hour']
+categorical_freq = ['season', 'temp_category']
+# Remaining features ('hour', 'day_of_week', 'month', 'year',
+# 'is_weekend', 'is_precipitating') will pass through via remainder='passthrough'
+
+# Preprocessing pipeline definition
+# Applies specific transformations to different column types
+preprocessor = ColumnTransformer(
+    transformers=[
+        # Scale numeric features
+        ('num', StandardScaler(), numeric_features),
+        # One-hot encode low-cardinality categorical features
+        ('ohe',
+         OneHotEncoder(handle_unknown='ignore', sparse_output=False),
+         categorical_ohe),
+        # Target encode high-cardinality/potentially predictive categorical features
+        ('target',
+         TargetEncoder(cols=categorical_target,
+                       handle_missing='value',
+                       handle_unknown='value'),
+         categorical_target),
+        # Frequency encode other categorical features
+        ('freq',
+         FrequencyEncoder(cols=categorical_freq),
+         categorical_freq)
+    ],
+    # Keep other columns not specified in transformers
+    remainder='passthrough'
+)
+
+# Define models to be evaluated
+models = {
+    'RandomForest': RandomForestRegressor(
+        n_estimators=200, max_depth=15, n_jobs=-1, random_state=42
+    ), # Added random_state for reproducibility
+    'GradientBoosting': GradientBoostingRegressor(
+        n_estimators=100, random_state=42
+    ), # Added random_state
+    'LinearRegression': LinearRegression(),
+    'Ridge': Ridge(alpha=1.0, random_state=42), # Added random_state
+    'SVR': SVR(kernel='rbf') # SVR doesn't have random_state in the same way
+}
+
+# Create a full pipeline (preprocessing + model) for each defined model
+pipelines = {}
+for name, model in models.items():
+    pipelines[name] = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('regressor', model)
+    ])
+
+print("✅ Pipelines created for all models.")
+#### 7. Model Training and Evaluation
+# Split data
+X = df.drop('traffic_volume', axis=1)
+y = df['traffic_volume']
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, shuffle=False
+)
+
+# Train and evaluate each model
+results = {}
+for name, pipeline in pipelines.items():
+    print(f"🚀 Training {name} model...")
+    pipeline.fit(X_train, y_train)
+    
+    # Make predictions
+    y_pred = pipeline.predict(X_test)
+    
+    # Calculate metrics
+    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+    r2 = r2_score(y_test, y_pred)
+    
+    # Store results
+    results[name] = {'RMSE': rmse, 'R²': r2}
+    
+    print(f"✅ {name} - RMSE: {rmse:.2f}, R²: {r2:.3f}")
+
+# Create a DataFrame to compare models
+results_df = pd.DataFrame(results).T
+print("\n📊 Model Comparison:")
+print(results_df)
+
+# Find the best model
+best_model = results_df['RMSE'].idxmin()
+print(
+    f"\n🏆 Best model: {best_model} "
+    f"with RMSE: {results_df.loc[best_model, 'RMSE']:.2f}"
+)
+#### 8. Pipeline Export
+# Save the best model
+best_pipeline = pipelines[best_model]
+joblib.dump(best_pipeline, f'traffic_prediction_{best_model}.pkl')
+print(
+    f"💾 Best model ({best_model}) "
+    f"saved as traffic_prediction_{best_model}.pkl"
+)
+
+# Optional: Save all models
+#for name, pipeline in pipelines.items():
+#    joblib.dump(pipeline, f'traffic_prediction_{name}.pkl')
+#    print(f"💾 {name} model saved as traffic_prediction_{name}.pkl")
+#### 9. Visualize Model Comparison
+# Plot RMSE comparison
+plt.figure(figsize=(10, 6))
+plt.bar(results_df.index, results_df['RMSE'], color='skyblue')
+plt.title('RMSE by Model (Lower is Better)')
+plt.ylabel('RMSE')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Plot R² comparison
+plt.figure(figsize=(10, 6))
+plt.bar(results_df.index, results_df['R²'], color='lightgreen')
+plt.title('R² by Model (Higher is Better)')
+plt.ylabel('R²')
+plt.xticks(rotation=45)
+plt.axhline(y=0.7, color='r', linestyle='--', label='Good fit threshold')
+plt.legend()
+plt.tight_layout()
+plt.show()
+#### 10. Hyperparameter Tuning for the Best Model Only
+# Define parameter grids for models you might want to tune
+# Keys MUST match the keys in the 'models' dictionary from Step 6
+# Keep grids defined for potential best models
+param_grids = {
+    'RandomForest': {
+        'regressor__n_estimators': [100, 200],
+        'regressor__max_depth': [10, 20, None],
+        'regressor__min_samples_split': [2, 5]
+    },
+    'GradientBoosting': {
+        'regressor__n_estimators': [100, 200],
+        'regressor__learning_rate': [0.05, 0.1],
+        'regressor__max_depth': [3, 5]
+    },
+    'Ridge': {
+        'regressor__alpha': [0.1, 1.0, 10.0, 100.0]
+    },
+    'SVR': {
+        'regressor__C': [0.1, 1, 10],
+        'regressor__gamma': ['scale', 'auto'],
+        'regressor__kernel': ['rbf', 'linear']
+    }
+}
+
+# --- Tuning only the best model identified in Step 7 ---
+
+print(
+    f"--- Starting Hyperparameter Tuning for the Best Model: "
+    f"{best_model} ---"
+)
+
+# Check if a parameter grid is defined for the identified best model
+if best_model in param_grids:
+    print(f"\n🔍 Tuning hyperparameters for {best_model}...")
+    start_time = time.time()
+
+    # Get the specific pipeline and grid for the best model
+    pipeline_to_tune = pipelines[best_model]
+    grid_to_use = param_grids[best_model]
+
+    # Setup GridSearchCV
+    grid_search = GridSearchCV(
+        pipeline_to_tune,
+        grid_to_use,
+        cv=3, # 3-fold cross-validation
+        scoring='neg_root_mean_squared_error', # Minimize RMSE
+        n_jobs=-1, # Use all CPU cores
+        verbose=1 # Show progress
+    )
+
+    # Fit GridSearchCV to the training data
+    # This finds the best parameters and refits the model on the whole train set
+    grid_search.fit(X_train, y_train)
+
+    end_time = time.time()
+    tuning_time = end_time - start_time
+
+    # The best estimator (refitted pipeline with best params)
+    best_tuned_pipeline = grid_search.best_estimator_
+
+    # Get results
+    best_params = grid_search.best_params_
+    best_cv_rmse = -grid_search.best_score_ # Convert back to positive RMSE
+
+    print(f"\n✓ Best parameters found for {best_model}: {best_params}")
+    print(f"✓ Best Cross-Validated RMSE for {best_model}: {best_cv_rmse:.2f}")
+    print(f"✓ Tuning duration for {best_model}: {tuning_time:.2f} seconds")
+
+    # Save the best *tuned* pipeline
+    tuned_model_filename = f'traffic_prediction_{best_model}_tuned.pkl'
+    joblib.dump(best_tuned_pipeline, tuned_model_filename)
+    print(
+    f"\n💾 Best tuned model ({best_model}) "
+    f"saved as {tuned_model_filename}"
+    )
+
+    # Informative: Evaluate this tuned model on the test set
+    print(f"\nEvaluating tuned {best_model} on the test set...")
+    y_pred_tuned = best_tuned_pipeline.predict(X_test)
+    rmse_tuned = np.sqrt(mean_squared_error(y_test, y_pred_tuned))
+    r2_tuned = r2_score(y_test, y_pred_tuned)
+    print(f" Tuned {best_model} Test RMSE: {rmse_tuned:.2f}")
+    print(f" Tuned {best_model} Test R²: {r2_tuned:.3f}")
+
+else:
+    # If no grid was defined for the best model
+    print(
+        f"\n⏭️ No parameter grid defined for the best model ({best_model}). "
+        "Skipping tuning."
+    )
+
+    print(
+        f"   The untuned version of {best_model} "
+        f"(saved as traffic_prediction_{best_model}.pkl in Step 8) "
+        "is considered the final one."
+    )
+    # Assign the untuned pipeline to best_tuned_pipeline
+    best_tuned_pipeline = pipelines[best_model]
+
+
+print("\n--- Hyperparameter Tuning Finished ---")

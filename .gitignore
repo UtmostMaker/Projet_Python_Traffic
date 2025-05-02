@@ -1,0 +1,24 @@
+# Environnement virtuel
+.venv/
+venv/
+projet_python_traffic.venv/
+
+
+# Caches Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Fichiers spécifiques à l'OS ou IDE (exemples)
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Potentiellement les gros fichiers de données si tu ne veux pas les versionner
+# data/*.csv # Décommente si ton CSV est trop gros pour GitHub (limite ~100MB)
+
+# Potentiellement les modèles si très volumineux et faciles à régénérer
+# models/*.pkl # Décommente si tes .pkl sont très gros
+
