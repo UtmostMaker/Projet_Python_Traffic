@@ -22,3 +22,4 @@ Thumbs.db
 # Potentiellement les modèles si très volumineux et faciles à régénérer
 # models/*.pkl # Décommente si tes .pkl sont très gros
 
+models/traffic_prediction_RandomForest_untuned.pkl
