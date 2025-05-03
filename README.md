@@ -14,6 +14,8 @@ Ce projet vise à prédire le volume de trafic horaire sur l'autoroute I-94 Inte
 
 ## Structure du Projet
 
+```
+
 Projet_Python_Traffic/
 │
 ├── .venv/ # Environnement virtuel (ignoré par Git)
@@ -36,7 +38,7 @@ Projet_Python_Traffic/
 ├── app.py # Script principal de l'application (À créer)
 └── traffic_prediction_RandomForest_tuned.pkl # Copie du modèle final pour l'app
 
-
+```
 
 ## Configuration et Installation
 
