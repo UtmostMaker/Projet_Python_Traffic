@@ -27,7 +27,8 @@ Projet_Python_Traffic/
 ├── data/ # Données brutes et traitées
 │ └── Metro_Interstate_Traffic_Volume.csv
 │
-├── notebooks/ # Notebooks Jupyter pour l'analyse et l'entraînement du modèle
+├── notebooks/ # Notebooks Jupyter pour l'exploration, l'analyse et l'entraînement du modèle
+│ ├── 00_exploration_datas_trafic.ipynb
 │ └── 01_entrainement_modele_trafic.ipynb
 │
 ├── models/ # Artefacts des modèles entraînés (fichiers .pkl)
