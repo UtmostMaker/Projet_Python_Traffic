@@ -1,130 +1,201 @@
-# Prédiction du Volume de Trafic Inter-États Métropolitain
+# 🚦 Projet de Prédiction du Volume de Trafic Autoroutier
 
-## Description
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![Scikit-learn](https://img.shields.io/badge/Scikit--learn-1.6.1-orange)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.35-blueviolet)
 
-Ce projet vise à prédire le volume de trafic horaire sur l'autoroute I-94 Interstate entre Minneapolis et St Paul, Minnesota. L'objectif est de construire un modèle de régression [1] en utilisant des données historiques de trafic ainsi que des caractéristiques météorologiques et de jours fériés pour prévoir le flux de trafic. Ce projet est développé dans le cadre d'un cours de Python, axé sur l'analyse de données, la construction de pipelines de machine learning et le déploiement de modèles (à venir).
+## 📖 Table des Matières
+- [Objectif du Projet](#🎯-objectif-du-projet)
+- [Jeu de Données](#📊-jeu-de-données)
+- [Architecture du Projet](#📁-architecture-du-projet)
+- [Méthodologie](#🔧-méthodologie)
+- [Résultats](#📈-résultats)
+- [Déploiement](#🚀-déploiement)
+- [Défis Rencontrés](#⚠️-défis-rencontrés)
+- [Compétences Acquises](#💡-compétences-acquises)
+- [Perspectives](#🔮-perspectives)
 
-## Jeu de Données [1]
+## 🎯 Objectif du Projet
+Développer un modèle de prédiction du volume horaire de trafic sur l'autoroute I-94 (Minneapolis-St Paul) en utilisant :
+- Données historiques (2012-2018)
+- Variables météorologiques
+- Informations temporelles
+- Jours fériés
 
-*   **Source :** Kaggle - [Metro Interstate Traffic Volume Dataset](https://www.kaggle.com/datasets/anshtanwar/metro-interstate-traffic-volume)
-*   **Contenu :** Environ 48 000 enregistrements horaires couvrant la période de 2012 à 2018 [3].
-*   **Caractéristiques :** Inclut des informations de date/heure, les conditions météorologiques (température, pluie, neige, nuages), des descriptions d'événements météo et des indicateurs de jours fériés [3].
-*   **Variable Cible :** `traffic_volume` (numérique, représentant les véhicules par heure) [3].
-*   **Fichier :** `data/Metro_Interstate_Traffic_Volume.csv` [3]
+## 📊 Jeu de Données
+**Source :** [Kaggle - Metro Interstate Traffic Volume](https://www.kaggle.com/datasets/anshtanwar/metro-interstate-traffic-volume)  
+**Caractéristiques clés :**
+- 48 000 enregistrements horaires
+- 10 variables explicatives
+- Variables météorologiques détaillées
+- Marqueurs temporels (heure, jour, mois, année)
 
-## Structure du Projet
+## 📁 Architecture du Projet
 
-```
-
-Projet_Python_Traffic/
-│
-├── .venv/ # Environnement virtuel (ignoré par Git)
-├── .git/ # Données du dépôt Git (caché)
-├── .gitignore # Spécifie les fichiers intentionnellement non suivis (ex: .venv, gros modèles)
-├── README.md # Ce fichier de documentation
-├── requirements.txt # Dépendances Python du projet
-│
-├── data/ # Données brutes et traitées
-│ └── Metro_Interstate_Traffic_Volume.csv
-│
-├── notebooks/ # Notebooks Jupyter pour l'exploration, l'analyse et l'entraînement du modèle
-│ ├── 00_exploration_datas_trafic.ipynb
-│ └── 01_entrainement_modele_trafic.ipynb
-│
-├── models/ # Artefacts des modèles entraînés (fichiers .pkl)
-│ ├── traffic_prediction_RandomForest_tuned.pkl # Modèle final optimisé
-│ └── traffic_prediction_RandomForest_untuned.pkl # Meilleur modèle non optimisé (pour comparaison)
-│
-└── app/ # Code source pour l'application web Streamlit
-├── app.py # Script principal de l'application (À créer)
-└── traffic_prediction_RandomForest_tuned.pkl # Copie du modèle final pour l'app
 
 ```
 
-## Configuration et Installation
+.
+├── app
+│   ├── app.py
+│   └── requirements.txt
+├── arborescence.txt
+├── data
+│   └── Metro_Interstate_Traffic_Volume.csv
+├── .git
+│   ├── COMMIT_EDITMSG
+│   ├── config
+│   ├── description
+│   ├── filter-repo
+│   ├── HEAD
+│   ├── hooks
+│   ├── index
+│   ├── info
+│   ├── logs
+│   ├── objects
+│   ├── ORIG_HEAD
+│   ├── packed-refs
+│   └── refs
+├── .gitignore
+├── models
+│   ├── traffic_prediction_RandomForest_tuned.pkl
+│   └── traffic_prediction_RandomForest_untuned.pkl
+├── notebooks
+│   ├── 00_exploration_datas_trafic.ipynb
+│   └── 01_entrainement_modele_trafic.ipynb
+├── README.md
+├── requirements.txt
+├── src
+│   ├── custom_transformers.py
+│   └── __pycache__
+└── .venv
+    ├── bin
+    ├── etc
+    ├── .gitignore
+    ├── include
+    ├── lib
+    ├── lib64 -> lib
+    ├── pyvenv.cfg
+    └── share
+```
 
-1.  **Cloner le Dépôt :**
-    ```
-    git clone https://github.com/UtmostMaker/Projet_Python_Traffic.git
-    cd Projet_Python_Traffic
-    ```
 
-2.  **Créer et Activer l'Environnement Virtuel :**
-    *   **Linux/macOS :**
-        ```
-        python3 -m venv .venv
-        source .venv/bin/activate
-        ```
-    *   **Windows (cmd) :**
-        ```
-        python -m venv .venv
-        .venv\Scripts\activate
-        ```
-    *   **Windows (PowerShell) :**
-        ```
-        python -m venv .venv
-        .venv\Scripts\Activate.ps1
-        ```
+## 🔧 Méthodologie
+1. **Prétraitement des Données**
+   - Conversion des températures (Kelvin → Celsius)
+   - Feature engineering : pics horaires, saisons, précipitations
+   - Encodage personnalisé des variables catégorielles
 
-3.  **Installer les Dépendances :** Assurez-vous que votre environnement virtuel est actif et installez tous les paquets requis.
-    ```
-    pip install -r requirements.txt
-    ```
+2. **Modélisation**
+   - Comparaison de 5 algorithmes (Random Forest, Gradient Boosting, SVR, etc.)
+   - Optimisation hyperparamétrique avec GridSearchCV
+   - Validation croisée (3 folds)
 
-## Flux de Travail et Processus de Modélisation (Résumé)
+3. **Déploiement**
+   - Interface utilisateur avec Streamlit
+   - Prédictions en temps réel
+   - Visualisation interactive des résultats
 
-L'analyse et le développement du modèle sont détaillés dans le notebook `notebooks/01_entrainement_modele_trafic.ipynb` [2]. Les étapes clés comprennent :
+## 📈 Résultats
+**Modèle Final :** Random Forest Optimisé  
+**Performances :**
+- RMSE : 528.44 véhicules/heure
+- R² : 0.928
+- Temps d'exécution : < 1 seconde/prédiction
 
-1.  **Chargement des Données :** Importation du jeu de données avec Pandas [2].
-2.  **Analyse Exploratoire des Données (EDA) :** Compréhension des distributions, corrélations et identification des motifs liés au temps, à la météo et aux jours fériés. Visualisations créées avec Matplotlib et Seaborn [2].
-3.  **Nettoyage des Données :** Traitement des valeurs manquantes et des doublons potentiels (détails dans le notebook) [2].
-4.  **Ingénierie de caractéristiques (Feature Engineering) :** Extraction de caractéristiques à partir des colonnes date/heure (heure, jour de la semaine, mois, année). Encodage potentiel des jours fériés ou événements spéciaux [2].
-5.  **Prétraitement :**
-    *   Séparation des données en ensembles d'entraînement et de test [2].
-    *   Mise à l'échelle des caractéristiques numériques (ex: avec `StandardScaler`) [2].
-    *   Encodage des caractéristiques catégorielles (ex: avec `OneHotEncoder` ou `TargetEncoder` pour les descriptions météo) [2].
-    *   Création d'un pipeline de prétraitement avec `ColumnTransformer` [2].
-6.  **Sélection de Modèle :** Construction de pipelines complets (prétraitement + modèle) et évaluation de plusieurs modèles de régression (ex: Ridge, SVR, GradientBoosting, RandomForest) en utilisant la validation croisée et la RMSE comme métrique principale. RandomForestRegressor a montré les meilleures performances initiales [2].
-7.  **Optimisation d'Hyperparamètres :** Optimisation du modèle le plus performant (RandomForestRegressor) avec `GridSearchCV` pour trouver la meilleure combinaison d'hyperparamètres basée sur la RMSE en validation croisée [2].
-8.  **Évaluation :** Évaluation de la performance du modèle final optimisé sur l'ensemble de test non utilisé, en utilisant la RMSE et le score R² [2].
-9.  **Sauvegarde du Modèle :** Sérialisation (enregistrement) du pipeline final optimisé (prétraitement + meilleur modèle optimisé) en utilisant `joblib` dans le répertoire `models/` (`traffic_prediction_RandomForest_tuned.pkl`) [1][2].
+**Comparaison des Modèles :**
+| Modèle            | RMSE    | R²     |
+|-------------------|---------|--------|
+| Random Forest     | 528.44  | 0.928  |
+| Gradient Boosting | 593.16  | 0.909  |
+| Régression Linéaire | 1574.15 | 0.360 |
 
-## Utilisation
+## 🚀 Déploiement
+**Exécuter l'application :**
 
-*   **Relancer l'Analyse/Entraînement :**
-    1.  Activez l'environnement virtuel (`source .venv/bin/activate` ou équivalent).
-    2.  Lancez Jupyter Notebook, JupyterLab, ou ouvrez le projet dans VS Code.
-    3.  Ouvrez et exécutez les cellules dans `notebooks/01_entrainement_modele_trafic.ipynb`. Cela effectuera l'ensemble du flux de travail et régénérera les fichiers de modèle dans le répertoire `models/`.
-*   **Utiliser le Modèle Entraîné :** Le modèle final, prêt à l'emploi, se trouve à l'emplacement `models/traffic_prediction_RandomForest_tuned.pkl`. Le script `app/app.py` (lorsqu'il sera créé) chargera ce modèle (ou sa copie dans `app/`) pour effectuer des prédictions.
+###Configuration de l'environnement
 
-## Gestion de Version (GitHub)
+python -m venv .venv
+source .venv/bin/activate # Linux/Mac
 
-Ce projet est versionné avec Git et hébergé sur GitHub.
-*   Le fichier `.gitignore` est configuré pour exclure l'environnement virtuel (`.venv/`) et les fichiers de modèle volumineux (`*.pkl` dans `models/`) afin de respecter les limites de taille de fichier de GitHub et de maintenir un dépôt propre.
-*   Les modifications sont enregistrées (commit) régulièrement. L'historique a pu être réécrit (`git-filter-repo`, `git push --force`) lors de la configuration initiale pour supprimer des fichiers volumineux accidentellement commités.
+.venv\Scripts\activate # Windows
 
-## Prochaines Étapes : Application Web [1]
+pip install -r requirements.txt
 
-*   **Objectif :** Développer une application web simple utilisant Streamlit pour permettre aux utilisateurs de saisir des caractéristiques pertinentes (comme la date, l'heure, les conditions météo) et d'obtenir une prédiction du volume de trafic basée sur le modèle entraîné.
-*   **Emplacement :** Le code de l'application se trouvera dans le répertoire `app/`, principalement dans `app.py`.
-*   **Fonctionnalités :**
-    *   Charger le modèle pré-entraîné (`app/traffic_prediction_RandomForest_tuned.pkl`).
-    *   Fournir des éléments d'interface utilisateur (curseurs, listes déroulantes, sélecteurs de date) pour les caractéristiques d'entrée [1].
-    *   Prétraiter l'entrée utilisateur pour correspondre au format attendu par le pipeline du modèle.
-    *   Afficher clairement le volume de trafic prédit [1].
+###Lancement de l'application
 
-## Technologies Utilisées
+cd app
+streamlit run app.py
 
-*   Python 3.x
-*   Jupyter Notebook / VS Code
-*   Git / GitHub
-*   Pandas
-*   NumPy
-*   Scikit-learn
-*   Category Encoders
-*   Matplotlib
-*   Seaborn
-*   Joblib
-*   Streamlit (pour la future application web)
 
+## ⚠️ Défis Rencontrés
+
+1. **Implémentation d'Encodages Personnalisés**  
+   - **FrequencyEncoder** : Création d'un transformateur compatible scikit-learn (`BaseEstimator`, `TransformerMixin`) pour encoder les catégories par leur fréquence, avec gestion des valeurs inconnues (remplacement par 0).  
+   - **Compatibilité Pipeline** : Intégration complexe des encodages spécifiques (*OneHot* pour météo/jours fériés, *Target Encoding* pour pics horaires) tout en évitant les fuites de données.
+
+2. **Architecture du Projet**  
+   - Structuration en modules (`src`, `app`, `models`, `notebooks`) avec gestion des imports relatifs.  
+   - Résolution des conflits de chemins entre l'entraînement (notebooks) et le déploiement (app Streamlit), nécessitant des ajustements de `sys.path`.
+
+3. **Traitement des Données Temporelles**  
+   - Découpage chronologique des données (2012-2018) pour éviter les fuites temporelles, contrairement à un split aléatoire classique.  
+   - Extraction manuelle des features cycliques (heure, jour, saison) pour capturer les motifs récurrents.
+
+4. **Optimisation des Performances**  
+   - **GridSearchCV** sur RandomForest : 3h d'exécution pour explorer 36 combinaisons d'hyperparamètres (`n_estimators`, `max_depth`, `min_samples_split`).  
+   - Compromis entre précision (RMSE=528) et temps de prédiction (<1s) pour l'usage en temps réel.
+
+5. **Débogage Multi-Outils**  
+   - Utilisation combinée du debugger VS Code, des prints stratégiques et des erreurs Streamlit pour traquer les incompatibilités de données.
+
+## 💡 Compétences Acquises
+
+### **Machine Learning Avancé**
+- **Feature Engineering** : Création de variables métier (pics horaires, statut précipitations)  
+- **Pipelines Modularisés** : Combinaison de `ColumnTransformer`, `StandardScaler` et encodeurs personnalisés  
+- **Optimisation** : Maîtrise de `GridSearchCV` et interprétation des hyperparamètres (`max_depth=10`, `min_samples_split=5`)  
+- **Évaluation** : Calcul et interprétation de RMSE (528 véhicules/heure) et R² (0.928)
+
+### **Développement Logiciel**
+- **POO en Python** : Implémentation de classes compatibles scikit-learn  
+- **Gestion de Projet** : Architecture modulaire, gestion des dépendances avec `requirements.txt`  
+- **Déploiement** : Création d'une interface utilisateur avec Streamlit et gestion des chemins relatifs
+
+### **Outils Professionnels**
+- **VS Code** : Maîtrise du debugger, gestion multi-fenêtres (Jupyter + app)  
+- **Git** : Collaboration via commits atomiques et résolution de conflits  
+- **Visualisation** : Création de dashboards interactifs avec `matplotlib`/`seaborn`
+
+### **Modèles Expérimentés**
+- **RandomForest** : Meilleures performances (RMSE=528) grâce au réglage fin  
+- **Gradient Boosting** : Deuxième meilleur modèle (RMSE=593), plus lent à entraîner  
+- **Régression Linéaire** : Performances médiocres (RMSE=1574) montrant la non-linéarité des données
+- **SVR** : Modèle entraîné pour comparaison, mais dont les performances (RMSE=1777) restent en retrait sur ce problème.
+
+## 🔮 Perspectives
+
+### 🚀 Au-Delà du Cours Initial
+Ce projet, bien que réalisé dans le cadre d'un cours d'introduction à Python, a permis d'explorer des concepts normalement réservés à des niveaux avancés grâce à :
+
+**Collaboration avec IA** :  
+- Génération de code boilerplate pour les transformers  
+- Décryptage des erreurs obscures   
+- Optimisation des requêtes de recherche pour résoudre des bugs spécifiques  
+
+**Apprentissage Accéléré** :  
+- Reverse-engineering de solutions professionnelles via l'étude de code GitHub  
+- Adaptation de tutoriels (ex: déploiement de modèles) au contexte pédagogique  
+
+**Pensée Systémique** :  
+- Intégration fluide entre composants (notebooks → modèle → app)  
+- Gestion des contraintes réelles (mémoire, temps CPU, ergonomie utilisateur)  
+
+Cette expérience démontre comment l'IA peut servir de multiplicateur de compétences, permettant à des débutants de réaliser des projets normalement hors de portée tout en développant une compréhension des mécanismes sous-jacents.
+
+---
+
+**Étudiants :** [Brice, Anaïs, Raoul ]  
+**Encadrant :** [Alexis BOGROFF]  
+**Date de Livraison :** 18 Mai 2025  
 
