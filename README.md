@@ -32,7 +32,6 @@ Développer un modèle de prédiction du volume horaire de trafic sur l'autorout
 
 ## 📁 Architecture du Projet
 
-
 ```
 
 .
