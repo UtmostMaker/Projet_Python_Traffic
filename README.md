@@ -111,22 +111,48 @@ Développer un modèle de prédiction du volume horaire de trafic sur l'autorout
 | Régression Linéaire | 1574.15 | 0.360 |
 
 ## 🚀 Déploiement
-**Exécuter l'application :**
 
-###Configuration de l'environnement
+**Exécuter l'application**
 
+---
+
+### 1. Configuration de l'environnement
+
+Pour créer et activer un environnement virtuel :
+
+**Linux/Mac :**
+```
 python -m venv .venv
-source .venv/bin/activate # Linux/Mac
-
-.venv\Scripts\activate # Windows
-
+source .venv/bin/activate
+```
+```
+Installer les dépendances :
 pip install -r requirements.txt
+```
 
-###Lancement de l'application
+**Windows :**
 
+```
+python -m venv .venv
+.venv\Scripts\activate
+```
+---
+
+### 2. Lancement de l'application
+
+Après avoir configuré l'environnement et installé les dépendances, vous pouvez lancer l'application.
+
+Naviguez vers le répertoire de l'application et exécutez la commande Streamlit :
+
+```
 cd app
 streamlit run app.py
+```
 
+
+---
+
+> **Astuce :** Assurez-vous que l’environnement virtuel est bien activé avant d’installer les dépendances ou de lancer l’application.
 
 ## ⚠️ Défis Rencontrés
 
@@ -173,7 +199,7 @@ streamlit run app.py
 - **Régression Linéaire** : Performances médiocres (RMSE=1574) montrant la non-linéarité des données
 - **SVR** : Modèle entraîné pour comparaison, mais dont les performances (RMSE=1777) restent en retrait sur ce problème.
 
-## 🔮 Perspectives
+## 🌟 Bilan et Acquis Clés
 
 ### 🚀 Au-Delà du Cours Initial
 Ce projet, bien que réalisé dans le cadre d'un cours d'introduction à Python, a permis d'explorer des concepts normalement réservés à des niveaux avancés grâce à :
@@ -195,7 +221,7 @@ Cette expérience démontre comment l'IA peut servir de multiplicateur de compé
 
 ---
 
-**Étudiants :** [Brice, Anaïs, Raoul ]  
+**Étudiants :** [Anaïs Deligny, Raoul Fossua Tindo, Brice]  
 **Encadrant :** [Alexis BOGROFF]  
 **Date de Livraison :** 18 Mai 2025  
 
