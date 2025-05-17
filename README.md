@@ -11,9 +11,9 @@
 - [Méthodologie](#🔧-méthodologie)
 - [Résultats](#📈-résultats)
 - [Déploiement](#🚀-déploiement)
-- [Défis Rencontrés](#⚠️-défis-rencontrés)
+- [Défis Rencontrés](#-défis-rencontrés)
 - [Compétences Acquises](#💡-compétences-acquises)
-- [Perspectives](#🔮-perspectives)
+- [Bilan et Acquis Clés](#🌟-bilan-et-Acquis-Clés)
 
 ## 🎯 Objectif du Projet
 Développer un modèle de prédiction du volume horaire de trafic sur l'autoroute I-94 (Minneapolis-St Paul) en utilisant :
@@ -125,16 +125,18 @@ Pour créer et activer un environnement virtuel :
 python -m venv .venv
 source .venv/bin/activate
 ```
-```
-Installer les dépendances :
-pip install -r requirements.txt
-```
 
 **Windows :**
 
 ```
 python -m venv .venv
 .venv\Scripts\activate
+```
+
+**Installations des dépendances**
+
+```
+pip install -r requirements.txt
 ```
 ---
 
