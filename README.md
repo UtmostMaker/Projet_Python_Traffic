@@ -11,9 +11,9 @@
 - [Méthodologie](#🔧-méthodologie)
 - [Résultats](#📈-résultats)
 - [Déploiement](#🚀-déploiement)
-- [Défis Rencontrés](#-défis-rencontrés)
+- [Défis Rencontrés](#️-défis-rencontrés)
 - [Compétences Acquises](#💡-compétences-acquises)
-- [Bilan et Acquis Clés](#🌟-bilan-et-Acquis-Clés)
+- [Bilan et Acquis Clés](#🌟-bilan-et-acquis-clés)
 
 ## 🎯 Objectif du Projet
 Développer un modèle de prédiction du volume horaire de trafic sur l'autoroute I-94 (Minneapolis-St Paul) en utilisant :
