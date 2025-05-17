@@ -5,7 +5,7 @@
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.35-blueviolet)
 
 ## 📖 Table des Matières
-- [Objectif du Projet](#️-objectif-du-projet)
+- [Objectif du Projet](#-objectif-du-projet)
 - [Jeu de Données](#️-jeu-de-données)
 - [Architecture du Projet](#️-architecture-du-projet)
 - [Méthodologie](#️-méthodologie)
